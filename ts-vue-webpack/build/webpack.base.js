@@ -6,6 +6,8 @@ const htmlwebpackplugin = require('html-webpack-plugin')
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
 const minicCssExtractPlugin = require('mini-css-extract-plugin')
 const VueLoaderPlugin = require('vue-loader/lib/plugin')
+const glob = require('glob') //查找匹配的文件
+const PurgeCssWebpackPlugin = require('purgecss-webpack-plugin')//删除无意义的css
 module.exports = (env) => {
     let isDev = env.development
     const base = {
@@ -39,7 +41,28 @@ module.exports = (env) => {
                 },
                 {
                     test: /\.(woff|ttf|eot)$/,
-                    use: 'file-loader'
+                    use: [{ loader: 'file-loader' }, {
+                        loader: 'image-webpack-loader',
+                        options: {
+                            mozjpeg: {
+                                progressive: true,
+                                quality: 65
+                            },
+                            optipng: {
+                                enabled: false,
+                            },
+                            pngquant: {
+                                quality: [0.65, 0.90],
+                                speed: 4
+                            },
+                            gifsicle: {
+                                interlaced: false,
+                            },
+                            webp: {
+                                quality: 75
+                            }
+                        }
+                    }]
                 },
                 {
                     test: /\.(jpe?g|png|gif|svg)$/,
@@ -57,6 +80,7 @@ module.exports = (env) => {
         },
         output: {//出口配置 
             filename: 'bundle.js',
+            chunkFilename: '[name].min.js',
             path: path.resolve(__dirname, '../dist')
         },
         plugins: [
@@ -72,6 +96,9 @@ module.exports = (env) => {
                     removeAttributeQuotes: true, //去掉双引号
                     collapseInlineTagWhitespace: true //压缩成一行
                 }
+            }),
+            new PurgeCssWebpackPlugin({
+                paths: glob.sync('./src/**/*', { nodir: true })
             })
         ].filter(Boolean)
     }
